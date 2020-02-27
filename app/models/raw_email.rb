@@ -18,7 +18,7 @@ class RawEmail < ApplicationRecord
   # deliberately don't strip_attributes, so keeps raw email properly
 
   has_one :incoming_message,
-          :inverse_of => :raw_email
+          inverse_of: :raw_email
 
   delegate :date, to: :mail
   delegate :message_id, to: :mail
@@ -62,7 +62,7 @@ class RawEmail < ApplicationRecord
   end
 
   def empty_from_field?
-    mail.from_addrs.nil? || mail.from_addrs.size == 0
+    mail.from_addrs.nil? || mail.from_addrs.empty?
   end
 
   def directory
@@ -73,7 +73,7 @@ class RawEmail < ApplicationRecord
     if Rails.env.test?
       File.join(Rails.root, 'files/raw_email_test')
     else
-      File.join(AlaveteliConfiguration::raw_emails_location,
+      File.join(AlaveteliConfiguration.raw_emails_location,
                 request_id[0..2], request_id)
     end
   end
@@ -95,7 +95,7 @@ class RawEmail < ApplicationRecord
   end
 
   def data=(d)
-    FileUtils.mkdir_p(directory) unless File.exists?(directory)
+    FileUtils.mkdir_p(directory) unless File.exist?(directory)
     File.atomic_write(filepath) do |file|
       file.binmode
       file.write(d)
@@ -109,9 +109,9 @@ class RawEmail < ApplicationRecord
   def data_as_text
     text = data
     if text.respond_to?(:encoding)
-      text = text.encode("UTF-8", :invalid => :replace,
-                         :undef => :replace,
-                         :replace => "")
+      text = text.encode("UTF-8", invalid: :replace,
+                                  undef: :replace,
+                                  replace: "")
     else
       text = Iconv.conv('UTF-8//IGNORE', 'UTF-8', text)
     end
@@ -119,7 +119,7 @@ class RawEmail < ApplicationRecord
   end
 
   def destroy_file_representation!
-    File.delete(filepath) if File.exists?(filepath)
+    File.delete(filepath) if File.exist?(filepath)
   end
 
   def from_name

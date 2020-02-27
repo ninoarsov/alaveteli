@@ -21,9 +21,9 @@ describe RawEmail do
 
   describe '#valid_to_reply_to?' do
     def test_email(result, email, empty_return_path, autosubmitted = nil)
-      stubs = { :from_email => email,
-                :empty_return_path? => empty_return_path,
-                :auto_submitted? => autosubmitted }
+      stubs = { from_email: email,
+                empty_return_path?: empty_return_path,
+                auto_submitted?: autosubmitted }
       raw_email = RawEmail.new
       stubs.each do |method, value|
         allow(raw_email).to receive(method).and_return(value)
@@ -215,7 +215,7 @@ describe RawEmail do
 
     it 'should delete the directory' do
       raw_email.destroy_file_representation!
-      expect(File.exists?(raw_email.filepath)).to eq(false)
+      expect(File.exist?(raw_email.filepath)).to eq(false)
     end
 
     it 'should only delete the directory if it exists' do

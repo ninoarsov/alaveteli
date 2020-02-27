@@ -42,88 +42,88 @@ class User < ApplicationRecord
   include User::Authentication
 
   rolify before_add: :setup_pro_account
-  strip_attributes :allow_empty => true
+  strip_attributes allow_empty: true
 
   attr_accessor :no_xapian_reindex
   attr_accessor :entered_otp_code
 
   has_many :info_requests,
            -> { order('info_requests.created_at desc') },
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
   has_many :info_request_events,
            -> { reorder('created_at desc') },
-           :through => :info_requests
+           through: :info_requests
   has_many :embargoes,
-           :inverse_of => :user,
-           :through => :info_requests
+           inverse_of: :user,
+           through: :info_requests
   has_many :draft_info_requests,
            -> { order('created_at desc') },
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
   has_many :user_info_request_sent_alerts,
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
   has_many :post_redirects,
            -> { order('created_at desc') },
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
   has_many :track_things,
            -> { order('created_at desc') },
-           :inverse_of => :tracking_user,
-           :foreign_key => 'tracking_user_id',
-           :dependent => :destroy
+           inverse_of: :tracking_user,
+           foreign_key: 'tracking_user_id',
+           dependent: :destroy
   has_many :citations,
            -> { order('created_at desc') },
            inverse_of: :user,
            dependent: :destroy
   has_many :comments,
            -> { order('created_at desc') },
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
   has_many :public_body_change_requests,
            -> { order('created_at desc') },
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
   has_one :profile_photo,
-          :inverse_of => :user,
-          :dependent => :destroy
+          inverse_of: :user,
+          dependent: :destroy
   has_many :censor_rules,
            -> { order('created_at desc') },
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
   has_many :info_request_batches,
            -> { order('created_at desc') },
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
   has_many :draft_info_request_batches,
            -> { order('created_at desc') },
-           :inverse_of => :user,
-           :dependent => :destroy,
-           :class_name => 'AlaveteliPro::DraftInfoRequestBatch'
+           inverse_of: :user,
+           dependent: :destroy,
+           class_name: 'AlaveteliPro::DraftInfoRequestBatch'
   has_many :request_classifications,
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
   has_one :pro_account,
-          :inverse_of => :user,
-          :dependent => :destroy
+          inverse_of: :user,
+          dependent: :destroy
   has_many :request_summaries,
-           :inverse_of => :user,
-           :dependent => :destroy,
-           :class_name => 'AlaveteliPro::RequestSummary'
+           inverse_of: :user,
+           dependent: :destroy,
+           class_name: 'AlaveteliPro::RequestSummary'
   has_many :notifications,
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
   has_many :track_things_sent_emails,
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
   has_many :track_things_sent_emails,
-           :dependent => :destroy
+           dependent: :destroy
   has_many :announcements,
-           :inverse_of => :user
+           inverse_of: :user
   has_many :announcement_dismissals,
-           :inverse_of => :user,
-           :dependent => :destroy
+           inverse_of: :user,
+           dependent: :destroy
 
   scope :active, -> { not_banned.not_closed }
   scope :banned, -> { where.not(ban_text: "") }
@@ -131,32 +131,33 @@ class User < ApplicationRecord
   scope :closed, -> { where.not(closed_at: nil) }
   scope :not_closed, -> { where(closed_at: nil) }
 
-  validates_presence_of :email, :message => _("Please enter your email address")
-  validates_presence_of :name, :message => _("Please enter your name")
+  validates_presence_of :email, message: _("Please enter your email address")
+  validates_presence_of :name, message: _("Please enter your name")
 
   validates_length_of :about_me,
-    :maximum => 500,
-    :message => _("Please keep it shorter than 500 characters")
+                      maximum: 500,
+                      message: _("Please keep it shorter than 500 characters")
 
-  validates :email, :uniqueness => {
-                      :case_sensitive => false,
-                      :message => _("This email is already in use") }
+  validates :email, uniqueness: {
+    case_sensitive: false,
+    message: _("This email is already in use")
+  }
 
   validate :email_and_name_are_valid
   validate :verify_otp_code,
-           :if => Proc.new { |u| u.otp_enabled? && u.require_otp? }
+           if: proc { |u| u.otp_enabled? && u.require_otp? }
 
   after_initialize :set_defaults
   after_update :reindex_referencing_models, :update_pro_account
 
-  acts_as_xapian :texts => [ :name, :about_me ],
-    :values => [
-      [ :created_at_numeric, 1, "created_at", :number ] # for sorting
-  ],
-  :terms => [ [ :variety, 'V', "variety" ] ],
-  :if => :indexed_by_search?
+  acts_as_xapian texts: [:name, :about_me],
+                 values: [
+                   [:created_at_numeric, 1, "created_at", :number] # for sorting
+                 ],
+                 terms: [[:variety, 'V', "variety"]],
+                 if: :indexed_by_search?
 
-  has_one_time_password :counter_based => true
+  has_one_time_password counter_based: true
 
   def self.pro
     with_role :pro
@@ -199,19 +200,19 @@ class User < ApplicationRecord
   # Case-insensitively find a user from their email
   def self.find_user_by_email(email)
     return nil if email.blank?
-    self.where('lower(email) = lower(?)', email.strip).first
+    where('lower(email) = lower(?)', email.strip).first
   end
 
   # The "internal admin" is a special user for internal use.
   def self.internal_admin_user
-    user = User.find_by_email(AlaveteliConfiguration::contact_email)
+    user = User.find_by_email(AlaveteliConfiguration.contact_email)
     if user.nil?
       password = PostRedirect.generate_random_token
       user = User.new(
-        :name => 'Internal admin user',
-        :email => AlaveteliConfiguration.contact_email,
-        :password => password,
-        :password_confirmation => password
+        name: 'Internal admin user',
+        email: AlaveteliConfiguration.contact_email,
+        password: password,
+        password_confirmation: password
       )
       user.save!
     end
@@ -258,7 +259,7 @@ class User < ApplicationRecord
   # This SQL statement is useful for seeing how spread out users are at the moment:
   # select extract(hour from last_daily_track_email) as h, count(*) from users group by extract(hour from last_daily_track_email) order by h;
   def self.spread_alert_times_across_day
-    self.find_each do |user|
+    find_each do |user|
       user.last_daily_track_email = User.random_time_in_last_day
       user.save!
     end
@@ -270,12 +271,12 @@ class User < ApplicationRecord
     return false if user.nil?
 
     user.record_bounce(message) if user.email_bounced_at.nil?
-    return true
+    true
   end
 
   def self.find_similar_named_users(user)
     User.where('name ILIKE ? AND email_confirmed = ? AND id <> ?',
-                user.name, true, user.id).order(:created_at)
+               user.name, true, user.id).order(:created_at)
   end
 
   def self.all_time_requesters
@@ -307,7 +308,7 @@ class User < ApplicationRecord
                          count
     # TODO: Have user objects automatically instantiated like the InfoRequest queries above
     result = {}
-    commenters.each { |user_id,count| result[User.find(user_id)] = count }
+    commenters.each { |user_id, count| result[User.find(user_id)] = count }
     result
   end
 
@@ -322,7 +323,7 @@ class User < ApplicationRecord
                          count
     # TODO: Have user objects automatically instantiated like the InfoRequest queries above
     result = {}
-    commenters.each { |user_id,count| result[User.find(user_id)] = count }
+    commenters.each { |user_id, count| result[User.find(user_id)] = count }
     result
   end
 
@@ -347,15 +348,11 @@ class User < ApplicationRecord
     return unless saved_change_to_attribute?(:url_name)
 
     comments.find_each do |comment|
-      comment.info_request_events.find_each do |info_request_event|
-        info_request_event.xapian_mark_needs_index
-      end
+      comment.info_request_events.find_each(&:xapian_mark_needs_index)
     end
 
     info_requests.find_each do |info_request|
-      info_request.info_request_events.find_each do |info_request_event|
-        info_request_event.xapian_mark_needs_index
-      end
+      info_request.info_request_events.find_each(&:xapian_mark_needs_index)
     end
   end
 
@@ -372,7 +369,7 @@ class User < ApplicationRecord
   def name
     _name = read_attribute(:name)
     if suspended?
-      _name = _("{{user_name}} (Account suspended)", :user_name => _name)
+      _name = _("{{user_name}} (Account suspended)", user_name: _name)
     end
     _name
   end
@@ -389,9 +386,9 @@ class User < ApplicationRecord
     unique_url_name = url_name
     suffix_num = 2 # as there's already one without numeric suffix
     conditions = id ? ["id <> ?", id] : []
-    while !User.where(:url_name => unique_url_name).where(conditions).first.nil?
+    until User.where(url_name: unique_url_name).where(conditions).first.nil?
       unique_url_name = url_name + "_" + suffix_num.to_s
-      suffix_num = suffix_num + 1
+      suffix_num += 1
     end
     write_attribute(:url_name, unique_url_name)
   end
@@ -511,7 +508,7 @@ class User < ApplicationRecord
   end
 
   def expire_requests
-    info_requests.each { |request| request.expire }
+    info_requests.each(&:expire)
   end
 
   def next_request_permitted_at
@@ -523,7 +520,7 @@ class User < ApplicationRecord
           order('created_at DESC').
             limit(AlaveteliConfiguration.max_requests_per_user_per_day)
 
-    return nil if n_most_recent_requests.size < AlaveteliConfiguration::max_requests_per_user_per_day
+    return nil if n_most_recent_requests.size < AlaveteliConfiguration.max_requests_per_user_per_day
 
     nth_most_recent_request = n_most_recent_requests[-1]
     nth_most_recent_request.created_at + 1.day
@@ -550,7 +547,7 @@ class User < ApplicationRecord
       raise "Unknown reason for ban"
     end
     text = CGI.escapeHTML(text)
-    text = MySociety::Format.make_clickable(text, :contract => 1)
+    text = MySociety::Format.make_clickable(text, contract: 1)
     text = text.gsub(/\n/, '<br>')
     text.html_safe
   end
@@ -571,7 +568,7 @@ class User < ApplicationRecord
 
   def about_me_already_exists?
     return false if about_me.blank?
-    self.class.where(:about_me => about_me).where.not(id: id).any?
+    self.class.where(about_me: about_me).where.not(id: id).any?
   end
 
   # Return about me text for display as HTML
@@ -579,18 +576,18 @@ class User < ApplicationRecord
   def get_about_me_for_html_display
     text = about_me.strip
     text = CGI.escapeHTML(text)
-    text = MySociety::Format.make_clickable(text, { :contract => 1, :nofollow => true })
+    text = MySociety::Format.make_clickable(text, contract: 1, nofollow: true)
     text = text.gsub(/\n/, '<br>')
     text.html_safe
   end
 
   def json_for_api
     {
-      :id => id,
-      :url_name => url_name,
-      :name => name,
-      :ban_text => ban_text,
-      :about_me => about_me,
+      id: id,
+      url_name: url_name,
+      name: name,
+      ban_text: ban_text,
+      about_me: about_me
       # :profile_photo => self.profile_photo # ought to have this, but too hard to get URL out for now
       # created_at / updated_at we only show the year on the main page for privacy reasons, so don't put here
     }
@@ -638,22 +635,22 @@ class User < ApplicationRecord
   def notify(info_request_event)
     Notification.create(
       info_request_event: info_request_event,
-      frequency: Notification.frequencies[self.notification_frequency],
+      frequency: Notification.frequencies[notification_frequency],
       user: self
     )
   end
 
   # Return a timestamp for the next time a user should be sent a daily summary
   def next_daily_summary_time
-    summary_time = Time.zone.now.change(self.daily_summary_time)
+    summary_time = Time.zone.now.change(daily_summary_time)
     summary_time += 1.day if summary_time < Time.zone.now
     summary_time
   end
 
   def daily_summary_time
     {
-      hour: self.daily_summary_hour,
-      min: self.daily_summary_minute
+      hour: daily_summary_hour,
+      min: daily_summary_minute
     }
   end
 
@@ -672,7 +669,7 @@ class User < ApplicationRecord
   # the same table. See:
   # https://github.com/jnunemaker/flipper/blob/master/docs/Gates.md
   def flipper_id
-    return "User;#{id}"
+    "User;#{id}"
   end
 
   private
@@ -691,7 +688,7 @@ class User < ApplicationRecord
       self.last_daily_track_email = User.random_time_in_last_day
       # Make daily summary emails go out at a random time for each new user
       # too, if it's not already set
-      if self.daily_summary_hour.nil? && self.daily_summary_minute.nil?
+      if daily_summary_hour.nil? && daily_summary_minute.nil?
         random_time = User.random_time_in_last_day
         self.daily_summary_hour = random_time.hour
         self.daily_summary_minute = random_time.min
@@ -709,7 +706,7 @@ class User < ApplicationRecord
   end
 
   def verify_otp_code
-    opts = { :auto_increment => true }
+    opts = { auto_increment: true }
     if entered_otp_code.nil? || !authenticate_otp(entered_otp_code, opts)
       msg = _('Invalid one time password')
       errors.add(:otp_code, msg)
@@ -726,5 +723,4 @@ class User < ApplicationRecord
   def update_pro_account
     pro_account.update_stripe_customer if pro_account
   end
-
 end
