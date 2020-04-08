@@ -270,12 +270,11 @@ module InfoRequestHelper
 
   def attachment_url(attachment, options = {})
     attach_params = attachment_params(attachment, options.merge(locale: false))
-    if options[:html]
-      if public_token?
-        share_attachment_as_html_path(attach_params)
-      else
-        get_attachment_as_html_path(attach_params)
-      end
+
+    if options[:html] && public_token?
+      share_attachment_as_html_path(attach_params)
+    elsif options[:html]
+      get_attachment_as_html_path(attach_params)
     elsif public_token?
       share_attachment_path(attach_params)
     else
